@@ -1,0 +1,26 @@
+{
+  "name": "forms-backend",
+  "version": "1.0.0",
+  "description": "This implementation provides a complete Node.js/Express backend for a Field Sales Executive (FSE) lead management system. The system allows field executives to submit form data even when offline, synchronizes when connectivity is restored, and supports dynamic form schemas stored in S3.",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "kartik",
+  "license": "ISC",
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.758.0",
+    "@aws-sdk/s3-request-presigner": "^3.758.0",
+    "aws-sdk": "^2.1692.0",
+    "bcryptjs": "^3.0.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "helmet": "^8.1.0",
+    "joi": "^17.13.3",
+    "jsonwebtoken": "^9.0.2",
+    "morgan": "^1.10.0",
+    "mysql2": "^3.13.0",
+    "winston": "^3.17.0"
+  }
+}
