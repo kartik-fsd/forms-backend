@@ -41,7 +41,7 @@ const getAllProjects = async (req, res, next) => {
 
     // Limit to projects the user has access to if not admin
     if (!req.user.permissions.includes('create_project')) {
-      sql += ` AND (p.id IN (
+      sql += ` AND (p.is_public = 1 OR p.id IN (
         SELECT project_id FROM project_users WHERE user_id = ?
       ))`;
       params.push(req.user.id);
@@ -92,9 +92,10 @@ const getProjectById = async (req, res, next) => {
     const project = projects[0];
 
     // Check if user has access to this project if not admin
+    // When checking user access for non-admin users
     if (!req.user.permissions.includes('create_project')) {
       const userAccess = await db.query(
-        'SELECT 1 FROM project_users WHERE project_id = ? AND user_id = ?',
+        'SELECT 1 FROM projects WHERE id = ? AND (is_public = 1 OR id IN (SELECT project_id FROM project_users WHERE user_id = ?))',
         [id, req.user.id]
       );
 
@@ -168,7 +169,7 @@ const getProjectById = async (req, res, next) => {
  */
 const createProject = async (req, res, next) => {
   try {
-    const { name, description, startDate, endDate, isActive = true, assignedUserIds = [] } = req.body;
+    const { name, description, startDate, endDate, isActive = true, isPublic = false, assignedUserIds = [] } = req.body;
 
     // Check if user has permission to create projects
     if (!req.user.permissions.includes('create_project')) {
@@ -193,9 +194,9 @@ const createProject = async (req, res, next) => {
         // Create project
         const [projectResult] = await conn.execute(
           `INSERT INTO projects (
-             name, description, start_date, end_date, is_active, created_by
-           ) VALUES (?, ?, ?, ?, ?, ?)`,
-          [name, description, startDate, endDate || null, isActive ? 1 : 0, req.user.id]
+             name, description, start_date, end_date, is_active, is_public, created_by
+           ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+          [name, description, startDate, endDate || null, isActive ? 1 : 0, isPublic ? 1 : 0, req.user.id]
         );
 
         const projectId = projectResult.insertId;
@@ -257,6 +258,7 @@ const createProject = async (req, res, next) => {
           startDate,
           endDate,
           isActive,
+          isPublic,
           createdAt: new Date()
         };
       });
@@ -286,7 +288,7 @@ const createProject = async (req, res, next) => {
 const updateProject = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { name, description, startDate, endDate, isActive } = req.body;
+    const { name, description, startDate, endDate, isActive, isPublic } = req.body;
 
     // Check if project exists
     const projects = await db.query(
@@ -346,6 +348,11 @@ const updateProject = async (req, res, next) => {
       return next(new AppError('No update fields provided', 400));
     }
 
+    if (isPublic !== undefined) {
+      updateFields.push('is_public = ?');
+      updateParams.push(isPublic ? 1 : 0);
+    }
+
     // Add ID to params
     updateParams.push(id);
 
@@ -382,7 +389,8 @@ const updateProject = async (req, res, next) => {
           ...updateFields.includes('description = ?') && { description },
           ...updateFields.includes('start_date = ?') && { startDate },
           ...updateFields.includes('end_date = ?') && { endDate },
-          ...updateFields.includes('is_active = ?') && { isActive }
+          ...updateFields.includes('is_active = ?') && { isActive },
+          ...updateFields.includes('is_public = ?') && { isPublic }
         }
       }
     });

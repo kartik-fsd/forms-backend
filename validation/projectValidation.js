@@ -8,6 +8,7 @@ const createProjectSchema = Joi.object({
     startDate: Joi.date().required(),
     endDate: Joi.date().allow(null).min(Joi.ref('startDate')),
     isActive: Joi.boolean().default(true),
+    isPublic: Joi.boolean().default(false),
     assignedUserIds: Joi.array().items(Joi.number().integer().positive()).default([])
 });
 
@@ -17,7 +18,8 @@ const updateProjectSchema = Joi.object({
     description: Joi.string().allow(null, ''),
     startDate: Joi.date(),
     endDate: Joi.date().allow(null).min(Joi.ref('startDate')),
-    isActive: Joi.boolean()
+    isActive: Joi.boolean(),
+    isPublic: Joi.boolean()
 }).min(1);
 
 // Assign users validation schema

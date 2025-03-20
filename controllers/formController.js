@@ -46,9 +46,12 @@ const getAllForms = async (req, res, next) => {
             );
 
             if (userProjects.length > 0) {
-                const projectIds = userProjects.map(p => p.project_id);
-                sql += ` AND ft.project_id IN (${projectIds.map(() => '?').join(',')})`;
-                params.push(...projectIds);
+                sql += ` AND (ft.project_id IN (
+                    SELECT id FROM projects WHERE is_public = 1
+                    UNION
+                    SELECT project_id FROM project_users WHERE user_id = ?
+                  ))`;
+                params.push(req.user.id);
             } else {
                 // No projects assigned
                 return res.status(200).json({
@@ -107,8 +110,8 @@ const getFormById = async (req, res, next) => {
         // Check user access if not admin
         if (!req.user.permissions.includes('create_project')) {
             const userProjects = await db.query(
-                'SELECT 1 FROM project_users WHERE project_id = ? AND user_id = ?',
-                [form.project_id, req.user.id]
+                'SELECT 1 FROM projects WHERE (id = ? AND is_public = 1) OR id IN (SELECT project_id FROM project_users WHERE project_id = ? AND user_id = ?)',
+                [form.project_id, form.project_id, req.user.id]
             );
 
             if (userProjects.length === 0) {
